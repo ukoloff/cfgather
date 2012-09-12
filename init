@@ -1,0 +1,51 @@
+#!/usr/bin/perl
+
+use strict;
+use DBI;
+use Expect;
+use FindBin;
+
+print STDERR "\n\nWarning: Not running from terminal!\n"	unless -t;
+print STDERR "\n\nWarning: SSH Agent not found!\n"	unless $ENV{SSH_AUTH_SOCK};
+
+my $h=DBI->connect("DBI:mysql::mysql_read_default_file=$FindBin::Bin/.my.cnf");
+
+prepareFilter();
+
+my $upd=$h->prepare("Update device Set itime=Now() Where id=?");
+
+my $s=$h->prepare(<<SQL);
+Select device.*, snippet.command
+From device, snippet
+Where Not disable And itime is Null
+And device.model=snippet.model And snippet.name='init'
+SQL
+$s->execute;
+
+while(my $r=$s->fetchrow_hashref)
+{
+ print $r->{name}, "\t[", $r->{host}, "]\n"	if -t;
+
+ my $z=new Expect;
+ $z->slave->stty(qw(-echo));
+ $z->raw_pty(1);
+ $z->log_stdout(0);
+ $z->restart_timeout_upon_receive(1);
+ $z->spawn(qw(/usr/bin/plink -A -pw NoNe), $r->{host});
+
+ $z->expect(3, ['Store key in cache', sub{shift->send("Y\n"); exp_continue;}]);
+ next	if $z->error<0;	# EOF=Access denied
+
+ $z->send($r->{command}."\n");
+ $z->expect(3);
+ $upd->execute($r->{id});
+
+ my $S=$z->before;
+ $S=~s/\e.*?[a-z]//ig		if $r->{ANSI};	# Clear ANSI terminal escapes
+ print "$S\n";
+}
+
+sub prepareFilter
+{
+}
+__END__
