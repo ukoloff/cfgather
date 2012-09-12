@@ -1,0 +1,46 @@
+#!/usr/bin/perl
+
+use strict;
+use Cwd;
+use DBI;
+use FindBin;
+use File::Temp qw(tempdir);
+
+my $h=DBI->connect("DBI:mysql::mysql_read_default_file=$FindBin::Bin/.my.cnf");
+$h->do("Set Names 'cp1251'");
+
+my $cwd=cwd;
+my $dir=tempdir(CLEANUP=>1);
+chdir $dir;
+
+my $s=$h->prepare(<<SQL);
+Select *,
+ (Select name From model Where id=model) As model
+From device
+Where Not disable And itime is Not Null
+SQL
+$s->execute;
+
+my $ss=$h->prepare("Select *, Date_Format(ctime, '%Y-%m-%dT%H-%i-%s') as fn From config Where device=?");
+
+while(my $r=$s->fetchrow_hashref)
+{
+ print $r->{name}, "\t[", $r->{host}, "]\n"	if -t;
+
+ mkdir $r->{name};
+ open F, '>', "$r->{name}/!.txt";
+ print F "Device:\t$r->{name}\nHost:\t$r->{host}\nModel:\t$r->{model}\nComment:\t$r->{comment}";
+ close F;
+
+ $ss->execute($r->{id});
+ while(my $rr=$ss->fetchrow_hashref)
+ {
+  open F, '>', "$r->{name}/$rr->{fn}.conf";
+  print F $rr->{info};
+  close F;
+ }
+}
+
+system qw(/usr/bin/zip -umr9), "$cwd/cfgather", ".";
+
+__END__
