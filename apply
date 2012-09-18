@@ -25,7 +25,7 @@ while(my $r=$s->fetchrow_hashref)
  $z->raw_pty(1);
  $z->log_stdout(0);
  $z->restart_timeout_upon_receive(1);
- $z->spawn(qw(/usr/bin/plink -batch -i), "$FindBin::Bin/.ssh/Backup.ppk", "Backup\@$r->{host}");
+ $z->spawn(qw(/usr/bin/plink -batch -i), "$FindBin::Bin/.ssh/cfgather.ppk", "cfgather\@$r->{host}");
  $z->send($r->{command}."\n");
  $z->expect(10);
  undef $z;
