@@ -19,3 +19,21 @@ INSERT INTO `snippet` (`model`, `name`, `command`, `comment`) VALUES
 (3, 'deluser', 'system-view\r\n\r\nundo ssh user Backup\r\nundo public-key peer Backup@w3.uxm\r\nY\r\n\r\nsave force\r\nquit\r\nquit\r\n', NULL),
 (2, 'deluser', 'en\r\n\r\nconfigure terminal\r\n\r\nno username Backup attributes\r\nno username Backup\r\n\r\nend\r\nwrite memory\r\nexit\r\n', NULL),
 (1, 'deluser', 'configure terminal\r\n\r\nip ssh pubkey-chain\r\n  no username Backup\r\n\r\nend\r\nwrite memory\r\nexit\r\n\r\n', NULL);
+
+INSERT INTO `snippet` (`model`, `name`, `command`, `comment`) VALUES
+(1, '<session>', 'terminal length 0', NULL),
+(1, '</session>', 'exit', NULL),
+(1, '<config>', 'configure terminal', NULL),
+(1, '</config>', 'write memory\r\nexit', NULL),
+(2, '<session>', 'en\r\n\r\nterminal pager 0', NULL),
+(2, '</session>', 'exit', NULL),
+(2, '<config>', 'configure terminal', NULL),
+(2, '</config>', 'end\r\nwrite memory', NULL),
+(3, '<session>', 'screen-length disable', NULL),
+(3, '</session>', 'quit', NULL),
+(3, '<config>', 'system-view', NULL),
+(3, '</config>', 'quit\r\nsave force', NULL),
+(4, '<session>', '\r\n\r\nno page', NULL),
+(4, '</session>', 'exit\r\nexit\r\ny', NULL),
+(4, '<config>', 'configure terminal', NULL),
+(4, '</config>', 'exit\r\nwrite memory', NULL);
