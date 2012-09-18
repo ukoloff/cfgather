@@ -7,15 +7,9 @@ Collect configuration from network appliances using SSH
 
 2. Run ./init
 
-<<<<<<< HEAD
-This adds public keys to putty's known_hosts and adds cfgather user to appliances.
-
-ssh-agent should be active and TFTP server required for ProCurve switches.
-=======
     This adds public keys to putty's known_hosts and adds cfgather user to appliances.
 
     ssh-agent should be active and TFTP server required for ProCurve switches.
->>>>>>> master
 
 3. Run ./get - manually or via cron
 
@@ -23,8 +17,4 @@ ssh-agent should be active and TFTP server required for ProCurve switches.
 
 5. Run ./apply cmd
 
-<<<<<<< HEAD
-Execute command (Where snippet.name='cmd') on all appliances.
-=======
     Execute command (Where snippet.name='cmd') on all appliances.
->>>>>>> master
