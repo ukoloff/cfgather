@@ -9,7 +9,11 @@ use Digest::SHA1 qw(sha1_hex);
 my $h=DBI->connect("DBI:mysql::mysql_read_default_file=$FindBin::Bin/.my.cnf");
 
 my $s=$h->prepare(<<SQL);
-Select device.*, snippet.command
+Select device.*, snippet.command,
+ (Select command From snippet Where model=device.model And name='<session>') As cmdA,
+ (Select command From snippet Where model=device.model And name='</session>') As cmdB,
+ (Select command From snippet Where model=device.model And name='<config>') As cmdX,
+ (Select command From snippet Where model=device.model And name='</config>') As cmdZ
 From device, snippet
 Where Not disable And itime is Not Null
 And device.model=snippet.model And snippet.name=?
@@ -26,7 +30,12 @@ while(my $r=$s->fetchrow_hashref)
  $z->log_stdout(0);
  $z->restart_timeout_upon_receive(1);
  $z->spawn(qw(/usr/bin/plink -batch -i), "$FindBin::Bin/.ssh/cfgather.ppk", "cfgather\@$r->{host}");
- $z->send($r->{command}."\n");
+ $z->send(
+    $r->{cmdA}."\n".
+    $r->{cmdX}."\n".
+    $r->{command}."\n".
+    $r->{cmdZ}."\n".
+    $r->{cmdB}."\n");
  $z->expect(10);
  undef $z;
 }

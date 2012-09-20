@@ -18,7 +18,11 @@ my $s=$h->prepare(<<SQL);
 Select device.*, snippet.command
 From device, snippet
 Where Not disable And itime is Null
-And device.model=snippet.model And snippet.name='init'
+And device.model=snippet.model And snippet.name='init',
+ (Select command From snippet Where model=device.model And name='<session>') As cmdA,
+ (Select command From snippet Where model=device.model And name='</session>') As cmdB,
+ (Select command From snippet Where model=device.model And name='<config>') As cmdX,
+ (Select command From snippet Where model=device.model And name='</config>') As cmdZ
 SQL
 $s->execute;
 
@@ -36,7 +40,12 @@ while(my $r=$s->fetchrow_hashref)
  $z->expect(3, ['Store key in cache', sub{shift->send("Y\n"); exp_continue;}]);
  next	if $z->error<0;	# EOF=Access denied
 
- $z->send($r->{command}."\n");
+ $z->send(
+    $r->{cmdA}."\n".
+    $r->{cmdX}."\n".
+    $r->{command}."\n".
+    $r->{cmdZ}."\n".
+    $r->{cmdB}."\n");
  $z->expect(3);
  $upd->execute($r->{id});
 

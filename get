@@ -15,14 +15,18 @@ my $ins=$h->prepare("Insert Into config(`log`, device, info) values($logID, ?, ?
 
 my $s=$h->prepare(<<SQL);
 Select device.*, model.ANSI, snippet.command,
-    sha1((Select info From config Where device=device.id Order By ctime Desc Limit 1)) As sha1
+ sha1((Select info From config Where device=device.id Order By ctime Desc Limit 1)) As sha1,
+ (Select command From snippet Where model=model.id And name='<session>') As cmdA,
+ (Select command From snippet Where model=model.id And name='</session>') As cmdB,
+ (Select command From snippet Where model=model.id And name='<#>') As cmdX,
+ (Select command From snippet Where model=model.id And name='</#>') As cmdZ
 From device, model, snippet
 Where Not disable And itime is Not Null
 And device.model=model.id
 And device.model=snippet.model And snippet.name='config'
 SQL
 $s->execute;
-#$s->dump_results; exit;
+
 while(my $r=$s->fetchrow_hashref)
 {
  print $r->{name}, "\t[", $r->{host}, "]\n"	if -t;
@@ -33,7 +37,12 @@ while(my $r=$s->fetchrow_hashref)
  $z->log_stdout(0);
  $z->restart_timeout_upon_receive(1);
  $z->spawn(qw(/usr/bin/plink -batch -i), "$FindBin::Bin/.ssh/cfgather.ppk", "cfgather\@$r->{host}");
- $z->send($r->{command}."\n");
+ $z->send(
+    $r->{cmdA}."\n".
+    ($r->{cmdX} or '#')."<Configuration>".$r->{cmdZ}."\n".
+    $r->{command}."\n".
+    ($r->{cmdX} or '#')."</Configuration>".$r->{cmdZ}."\n".
+    $r->{cmdB}."\n");
  $z->expect(10);
  my $S=$z->before;
  undef $z;
